@@ -1,0 +1,307 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: userId (matches auth.uid)
+    // Fields: userId, fullName, email, role, department, areaId, plantId, position, isActive, createdAt, updatedAt
+    //
+    // Collection: plants
+    // Document ID: plantId
+    // Fields: plantId, plantName, country, location, isActive, createdAt, updatedAt
+    //
+    // Collection: areas
+    // Document ID: areaId
+    // Fields: areaId, areaName, plantId, responsibleUserId, isActive, createdAt, updatedAt
+    //
+    // Collection: projectTypes
+    // Document ID: projectTypeId
+    // Fields: projectTypeId, name, description, requiresADP, requiresMOC, requiresPSSR, requiresSafetyReview, requiresTransmittal, requiresElectricalChecklist, requiresSAP, isActive
+    //
+    // Collection: projects
+    // Document ID: projectId
+    // Fields: projectId, projectCode, projectName, description, site, plantId, businessUnit, areaId, department, costCenter, requesterId, projectLeaderId, responsibleUserId, sponsorId, projectTypeId, projectSubtype, investmentType, investmentFocus, status, currentStage, priority, riskLevel, estimatedBudgetUSD, approvedBudgetUSD, spentAmountUSD, estimatedStartDate, estimatedEndDate, actualStartDate, actualEndDate, createdAt, updatedAt, createdBy, updatedBy
+    //
+    // Collection: investmentRequests
+    // Document ID: investmentRequestId
+    // Fields: investmentRequestId, projectId, requestName, requesterId, areaId, costCenter, site, background, scopeDescription, objectives, expectedBenefits, productionContribution, qualityContribution, safetyContribution, sustainabilityContribution, ITContribution, estimatedSavingsUSD, timeReductionHours, involvesFixedAssetReplacement, assetDescription, status, submittedAt, approvedAt, rejectedAt, createdAt, updatedAt
+    //
+    // Collection: adps
+    // Document ID: adpId
+    // Fields: adpId, projectId, version, projectBackground, projectObjective, deliverableScope, criticalVariables, processHazards, plantLocation, requiresSafetyReview1And2, safetyReviewReason, requiresPSSR, pssrReason, requiresMOCOperational, mocOperationalReason, requiresMOCAdministrative, mocAdministrativeReason, requiresBasicEngineering, requiresDetailEngineering, requiresMaintenanceDocumentation, assumptions, exclusions, estimatedDurationMonths, criticalPath, paybackTime, successFactors, status, approvedAt, createdAt, updatedAt
+    //
+    // Collection: actionItems
+    // Document ID: actionId
+    // Fields: actionId, projectId, sourceModule, sourceDocumentId, title, description, responsibleUserId, dueDate, completionDate, status, priority, evidenceRequired, evidenceId, createdBy, createdAt, updatedAt
+    //
+    // Collection: approvals
+    // Document ID: approvalId
+    // Fields: approvalId, projectId, module, documentId, approverId, approverRole, approvalOrder, status, comments, requestedAt, approvedAt, rejectedAt, delegatedTo, createdAt, updatedAt
+    //
+    // Collection: risks
+    // Document ID: riskId
+    // Fields: riskId, projectId, riskCategory, description, probability, impact, riskLevel, mitigationPlan, responsibleUserId, status, createdAt, updatedAt
+    //
+    // Collection: schedules
+    // Document ID: scheduleId
+    // Fields: scheduleId, projectId, taskName, taskDescription, ownerId, startDate, endDate, plannedProgress, actualProgress, dependencyIds, isCriticalPath, status, createdAt, updatedAt
+    //
+    // Collection: documents
+    // Document ID: documentId
+    // Fields: documentId, projectId, documentType, fileName, fileUrl, storagePath, fileExtension, fileSize, version, uploadedBy, uploadedAt, status, tags, relatedModule, requiresApproval, approvedAt, createdAt, updatedAt
+    //
+    // Collection: evidences
+    // Document ID: evidenceId
+    // Fields: evidenceId, projectId, actionId, documentId, evidenceType, fileUrl, storagePath, description, uploadedBy, uploadedAt, validatedBy, validatedAt, status, createdAt, updatedAt
+    //
+    // Collection: comments
+    // Document ID: commentId
+    // Fields: commentId, projectId, module, relatedId, userId, commentText, createdAt, updatedAt
+    //
+    // Collection: auditLogs
+    // Document ID: auditId
+    // Fields: auditId, projectId, userId, action, module, previousValue, newValue, timestamp, ipAddress
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Get current user role from the database
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function hasRole(role) {
+      return isAuthenticated() && getUserRole() == role;
+    }
+
+    function isAdmin() {
+      return hasRole("Admin");
+    }
+
+    function hasAnyWritingRole() {
+      return isAdmin() || hasRole("Líder de Proyecto") || hasRole("Solicitante") || hasRole("Planeación Estratégica") || hasRole("MASH") || hasRole("Contraloría") || hasRole("Mantenimiento");
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function areImmutableFieldsUnchanged(fields) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidUrl(url) {
+      return url is string && (url.matches("^https://.*") || url.matches("^http://.*"));
+    }
+
+    // ===============================================================
+    // Collection Rules
+    // ===============================================================
+
+    // Default Deny Rule
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 1. Users Collection
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      // Only admins can create/update users directly, or users can create their own profile with non-escalated role (default "Solicitante" or "Consulta")
+      allow create: if isAuthenticated() && (
+        isAdmin() || (
+          isOwner(userId) && 
+          hasRequiredFields(['userId', 'fullName', 'email', 'role', 'areaId', 'plantId']) &&
+          request.resource.data.role in ['Solicitante', 'Consulta'] &&
+          request.resource.data.userId == request.auth.uid
+        )
+      );
+      // Users can update their own non-privileged details, but not their role
+      allow update: if isAuthenticated() && (
+        isAdmin() || (
+          isOwner(userId) &&
+          areImmutableFieldsUnchanged(['role', 'userId', 'email']) &&
+          request.resource.data.fullName.size() > 0
+        )
+      );
+      allow delete: if isAdmin();
+    }
+
+    // 2. Plants Collection
+    match /plants/{plantId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // 3. Areas Collection
+    match /areas/{areaId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // 4. Project Types Collection
+    match /projectTypes/{typeId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // 5. Projects Collection
+    match /projects/{projectId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && (
+        isAdmin() || hasRole("Líder de Proyecto") || hasRole("Solicitante")
+      ) && hasRequiredFields(['projectId', 'projectCode', 'projectName', 'status', 'currentStage', 'projectLeaderId', 'areaId', 'plantId', 'createdBy']);
+      
+      allow update: if isAuthenticated() && (
+        isAdmin() || 
+        hasRole("Líder de Proyecto") || 
+        hasRole("Dirección") || 
+        hasRole("Planeación Estratégica") || 
+        hasRole("MASH") || 
+        hasRole("Contraloría")
+      ) && areImmutableFieldsUnchanged(['projectId', 'projectCode', 'createdBy', 'createdAt']);
+      
+      allow delete: if isAdmin();
+    }
+
+    // 6. Investment Requests Collection
+    match /investmentRequests/{requestId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && (
+        isAdmin() || hasRole("Líder de Proyecto") || hasRole("Solicitante")
+      ) && hasRequiredFields(['investmentRequestId', 'projectId', 'requestName', 'requesterId', 'status']);
+      
+      allow update: if isAuthenticated() && (
+        isAdmin() || hasRole("Líder de Proyecto") || hasRole("Solicitante") || hasRole("Contraloría") || hasRole("Dirección")
+      ) && areImmutableFieldsUnchanged(['investmentRequestId', 'projectId', 'requesterId']);
+      
+      allow delete: if isAdmin();
+    }
+
+    // 7. ADPs Collection
+    match /adps/{adpId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && (
+        isAdmin() || hasRole("Líder de Proyecto") || hasRole("Solicitante")
+      );
+      allow update: if isAuthenticated() && (
+        isAdmin() || hasRole("Líder de Proyecto") || hasRole("Dirección") || hasRole("Planeación Estratégica") || hasRole("MASH")
+      ) && areImmutableFieldsUnchanged(['adpId', 'projectId']);
+      allow delete: if isAdmin();
+    }
+
+    // 8. Action Items Collection
+    match /actionItems/{actionId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && (
+        isAdmin() || hasRole("Líder de Proyecto") || hasRole("MASH") || hasRole("Planeación Estratégica")
+      );
+      // The responsible user can update the status (e.g. to Completed/Waiting Evidence), others with manager roles can fully update
+      allow update: if isAuthenticated() && (
+        isAdmin() || 
+        hasRole("Líder de Proyecto") || 
+        request.auth.uid == resource.data.responsibleUserId || 
+        request.auth.uid == resource.data.createdBy
+      );
+      allow delete: if isAdmin() || (hasRole("Líder de Proyecto") && request.auth.uid == resource.data.createdBy);
+    }
+
+    // 9. Approvals Collection
+    match /approvals/{approvalId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && (
+        isAdmin() || hasRole("Líder de Proyecto") || hasRole("Solicitante") || hasRole("Planeación Estratégica")
+      );
+      // Approver or delegated user can write the outcome
+      allow update: if isAuthenticated() && (
+        isAdmin() || 
+        request.auth.uid == resource.data.approverId || 
+        request.auth.uid == resource.data.delegatedTo ||
+        hasRole(resource.data.approverRole)
+      );
+      allow delete: if isAdmin();
+    }
+
+    // 10. Risks Collection
+    match /risks/{riskId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && (
+        isAdmin() || hasRole("Líder de Proyecto") || hasRole("MASH")
+      );
+      allow delete: if isAdmin();
+    }
+
+    // 11. Schedules Collection
+    match /schedules/{scheduleId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && (
+        isAdmin() || hasRole("Líder de Proyecto")
+      );
+      allow delete: if isAdmin();
+    }
+
+    // 12. Documents Collection
+    match /documents/{documentId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && (
+        isAdmin() || hasRole("Líder de Proyecto") || hasRole("Solicitante") || hasRole("MASH") || hasRole("Mantenimiento")
+      ) && hasRequiredFields(['documentId', 'projectId', 'fileName', 'fileUrl', 'uploadedBy']);
+      allow update: if isAuthenticated() && (
+        isAdmin() || request.auth.uid == resource.data.uploadedBy || hasRole("Líder de Proyecto")
+      );
+      allow delete: if isAdmin() || (hasRole("Líder de Proyecto") && request.auth.uid == resource.data.uploadedBy);
+    }
+
+    // 13. Evidences Collection
+    match /evidences/{evidenceId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && (
+        isAdmin() || hasRole("Líder de Proyecto") || hasRole("Solicitante") || hasRole("Mantenimiento")
+      );
+      allow update: if isAuthenticated() && (
+        isAdmin() || hasRole("Líder de Proyecto") || request.auth.uid == resource.data.uploadedBy
+      );
+      allow delete: if isAdmin();
+    }
+
+    // 14. Comments Collection
+    match /comments/{commentId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && (
+        request.resource.data.userId == request.auth.uid
+      );
+      allow update: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid
+      ) && areImmutableFieldsUnchanged(['commentId', 'projectId', 'userId']);
+      allow delete: if isAdmin() || (resource.data.userId == request.auth.uid);
+    }
+
+    // 15. Audit Logs Collection
+    match /auditLogs/{auditId} {
+      allow read: if isAuthenticated() && (isAdmin() || hasRole("Dirección") || hasRole("Planeación Estratégica") || hasRole("Contraloría"));
+      allow create: if isAuthenticated(); // Allowed so services can programmatically log operations
+      allow update, delete: if false; // Audit logs must be immutable
+    }
+  }
+}

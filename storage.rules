@@ -1,0 +1,43 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper function to check authentication
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper to validate file size (max 50MB)
+    function isValidSize() {
+      return request.resource.size < 50 * 1024 * 1024;
+    }
+
+    // Helper to validate allowed mime types
+    function isValidType() {
+      return request.resource.contentType.matches('application/pdf') ||
+             request.resource.contentType.matches('application/vnd.openxmlformats-officedocument.wordprocessingml.document') || // docx
+             request.resource.contentType.matches('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') || // xlsx
+             request.resource.contentType.matches('application/vnd.openxmlformats-officedocument.presentationml.presentation') || // pptx
+             request.resource.contentType.matches('image/png') ||
+             request.resource.contentType.matches('image/jpeg') ||
+             request.resource.contentType.matches('image/jpg');
+    }
+
+    // Default Deny
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    // Project files scoping
+    match /projects/{projectId}/{folder}/{fileName} {
+      // Must be logged in to read documents
+      allow read: if isAuthenticated();
+      
+      // Must be logged in, uploading to a valid folder with proper type and size limits
+      allow write: if isAuthenticated() && 
+                      folder in ['documents', 'evidences', 'approvals', 'exports'] && 
+                      isValidSize() && 
+                      isValidType();
+    }
+  }
+}
