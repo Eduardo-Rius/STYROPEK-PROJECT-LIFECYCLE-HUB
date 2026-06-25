@@ -43,7 +43,8 @@ export function FileUploader({ onUpload, loading = false, accept = ".pdf,.docx,.
   };
 
   const validateAndSetFile = (file) => {
-    const ext = file.name.split(".").pop().toLowerCase();
+    console.log("FILE INPUT CHANGE", file);
+    const ext = file.name.split('.').pop().toLowerCase();
     if (!ALLOWED_FILE_EXTENSIONS.includes(ext)) {
       alert(`Formato inválido. Extensiones permitidas: ${ALLOWED_FILE_EXTENSIONS.join(", ")}`);
       return;
@@ -53,6 +54,7 @@ export function FileUploader({ onUpload, loading = false, accept = ".pdf,.docx,.
       alert("El archivo excede el tamaño máximo permitido de 50MB.");
       return;
     }
+    console.log("SELECTED FILE STATE SET", file);
     setSelectedFile(file);
   };
 
@@ -60,11 +62,22 @@ export function FileUploader({ onUpload, loading = false, accept = ".pdf,.docx,.
     fileInputRef.current.click();
   };
 
-  const handleUploadSubmit = () => {
-    if (!selectedFile) return;
-    onUpload(selectedFile).then(() => {
+  const handleUploadSubmit = async () => {
+    console.log("FILEUPLOADER CLICK");
+    console.log("CURRENT selectedFile", selectedFile);
+    console.log("CALLING onUpload");
+
+    if (!selectedFile) {
+      console.warn("NO FILE SELECTED");
+      return;
+    }
+    try {
+      await onUpload(selectedFile);
+      console.log("FILEUPLOADER UPLOAD RESOLVED");
       setSelectedFile(null);
-    });
+    } catch (error) {
+      console.error("FILEUPLOADER UPLOAD FAILED", error);
+    }
   };
 
   return (
@@ -123,8 +136,9 @@ export function FileUploader({ onUpload, loading = false, accept = ".pdf,.docx,.
           </div>
           
           <div className="flex items-center gap-2 ml-4">
-            <button
+            <button type="button"
               onClick={(e) => {
+                e.preventDefault();
                 e.stopPropagation();
                 setSelectedFile(null);
               }}
@@ -133,12 +147,15 @@ export function FileUploader({ onUpload, loading = false, accept = ".pdf,.docx,.
               Remover
             </button>
             <button
-              disabled={loading}
+              type="button"
               onClick={(e) => {
+                e.preventDefault();
                 e.stopPropagation();
+                console.log("UPLOAD BUTTON CLICK");
                 handleUploadSubmit();
               }}
-              className="text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 disabled:bg-brand-400 px-3 py-1.5 rounded shadow-sm"
+              disabled={loading}
+              className="text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 px-3 py-1.5 rounded disabled:opacity-50"
             >
               {loading ? "Subiendo..." : "Subir archivo"}
             </button>

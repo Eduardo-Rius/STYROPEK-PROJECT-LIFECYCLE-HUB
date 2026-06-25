@@ -44,6 +44,7 @@ export async function uploadDocument(projectId, file, metadata = {}, userId) {
   // Upload to Firebase Storage
   await uploadBytes(storageRef, file);
   const fileUrl = await getDownloadURL(storageRef);
+  const downloadUrl = fileUrl; // alias for compatibility
 
   const rawDocument = {
     documentId,
@@ -51,11 +52,16 @@ export async function uploadDocument(projectId, file, metadata = {}, userId) {
     documentType: metadata.documentType || "Otro",
     fileName: file.name,
     fileUrl,
+    downloadUrl,
     storagePath,
     fileExtension,
     fileSize: file.size,
     version: metadata.version || 1,
     uploadedBy: userId,
+    uploadedByName: metadata.uploadedByName || "Usuario no identificado",
+    uploadedByRole: metadata.uploadedByRole || "Sin rol asignado",
+    uploadedByEmail: metadata.uploadedByEmail || "",
+    uploadedByUid: metadata.uploadedByUid || userId,
     uploadedAt: new Date(),
     status: metadata.status || "Pending Review",
     tags: metadata.tags || [],
@@ -80,7 +86,7 @@ export async function uploadDocument(projectId, file, metadata = {}, userId) {
   await createAuditLog({
     projectId,
     userId,
-    action: "UPLOAD_DOCUMENT",
+    action: "DOCUMENT_UPLOADED",
     module: "DOCUMENT",
     newValue: rawDocument
   });
@@ -142,7 +148,7 @@ export async function getDocumentsByProject(projectId) {
   const querySnapshot = await getDocs(q);
   const documents = [];
   querySnapshot.forEach((doc) => {
-    documents.push({ id: doc.id, ...doc.data() });
+    documents.push({ documentId: doc.id, id: doc.id, ...doc.data() });
   });
   return documents;
 }

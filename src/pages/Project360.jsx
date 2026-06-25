@@ -11,7 +11,8 @@ import {
   Sparkles,
   User,
   Activity,
-  ArrowLeft
+  ArrowLeft,
+  Calendar
 } from "lucide-react";
 import { useProject } from "../hooks/useProject";
 import { useAuth } from "../hooks/useAuth";
@@ -25,12 +26,13 @@ import ActionStatus from "../components/ui/ActionStatus";
 import ApprovalStatus from "../components/ui/ApprovalStatus";
 import AuditTrail from "../components/ui/AuditTrail";
 import FileUploader from "../components/ui/FileUploader";
+import WBSSchedule from "../components/ui/WBSSchedule";
 
 // Services for mutations
 import { createActionItem, completeActionItem } from "../services/actionService";
 import { approve, reject, requestApproval } from "../services/approvalService";
-import { createRisk } from "../services/riskService";
-import { registerDocumentMetadata } from "../services/documentService";
+import { createRisk, closeRisk } from "../services/riskService";
+import { uploadDocument } from "../services/documentService";
 import { changeProjectStatus } from "../services/projectService";
 import { improveText, suggestActions, generateRisks, summarizeProject } from "../services/aiService";
 
@@ -54,6 +56,11 @@ export function Project360() {
   const [activeTab, setActiveTab] = useState("general");
   const [actionTitle, setActionTitle] = useState("");
   const [actionResp, setActionResp] = useState("usr-maint");
+  const [riskCategory, setRiskCategory] = useState("");
+  const [riskDescription, setRiskDescription] = useState("");
+  const [riskProb, setRiskProb] = useState(1);
+  const [riskImpact, setRiskImpact] = useState(1);
+  const [riskMitigation, setRiskMitigation] = useState("");
   const [submitting, setSubmitting] = useState(false);
   
   // AI State
@@ -96,6 +103,34 @@ export function Project360() {
     }
   };
 
+  const handleAddRisk = async (e) => {
+    e.preventDefault();
+    if (!riskCategory || !riskDescription) return;
+    setSubmitting(true);
+    try {
+      await createRisk({
+        projectId: id,
+        riskCategory,
+        description: riskDescription,
+        probability: riskProb,
+        impact: riskImpact,
+        mitigationPlan: riskMitigation,
+        responsibleUserId: user.uid
+      }, user.uid);
+      // Reset fields
+      setRiskCategory("");
+      setRiskDescription("");
+      setRiskProb(1);
+      setRiskImpact(1);
+      setRiskMitigation("");
+      refresh();
+    } catch (err) {
+      alert("Error al agregar riesgo: " + err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleCompleteAction = async (actionId) => {
     setSubmitting(true);
     try {
@@ -125,21 +160,12 @@ export function Project360() {
     }
   };
 
-  const handleMockUpload = async (file) => {
+
+
+  const handleCloseRisk = async (riskId) => {
     setSubmitting(true);
     try {
-      // Mock upload mapping to documents collection
-      await registerDocumentMetadata({
-        projectId: id,
-        documentType: "Evidencia",
-        fileName: file.name,
-        fileUrl: "https://mockstorage.styropek.com/o/" + file.name,
-        storagePath: `projects/${id}/documents/${file.name}`,
-        fileExtension: file.name.split(".").pop(),
-        fileSize: file.size,
-        status: "Approved",
-        tags: ["Carga Manual"]
-      }, user.uid);
+      await closeRisk(riskId, user.uid);
       refresh();
     } catch (err) {
       alert(err.message);
@@ -147,6 +173,51 @@ export function Project360() {
       setSubmitting(false);
     }
   };
+  const handleUpload = async (file) => {
+    setSubmitting(true);
+
+
+    try {
+      const uploadedByName =
+        profile?.name ||
+        profile?.displayName ||
+        profile?.fullName ||
+        user?.displayName ||
+        user?.email ||
+        user?.uid ||
+        "Usuario no identificado";
+
+      const uploadedByRole =
+        profile?.role ||
+        profile?.roleName ||
+        profile?.area ||
+        profile?.department ||
+        user?.role ||
+        user?.area ||
+        user?.department ||
+        "Sin rol asignado";
+
+      await uploadDocument(id, file, {
+        documentType: "Evidencia",
+        relatedModule: "PROJECT",
+        uploadedByName,
+        uploadedByRole,
+        uploadedByEmail: user?.email || "",
+        uploadedByUid: user?.uid,
+        tags: ["Carga Manual"]
+      }, user?.uid);
+
+      console.log("UPLOAD SUCCESS");
+      refresh();
+    } catch (error) {
+      console.error("UPLOAD ERROR", error);
+      alert(error.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+
 
   const handleRequestApproval = async () => {
     setSubmitting(true);
@@ -216,6 +287,7 @@ export function Project360() {
     { id: "request", label: "Sol. Inversión", icon: <FileText className="w-4 h-4" /> },
     { id: "adp", label: "ADP", icon: <Layers className="w-4 h-4" /> },
     { id: "actions", label: "Tareas", icon: <CheckSquare className="w-4 h-4" /> },
+    { id: "schedule", label: "Cronograma", icon: <Calendar className="w-4 h-4" /> },
     { id: "approvals", label: "Aprobaciones", icon: <FileCheck2 className="w-4 h-4" /> },
     { id: "risks", label: "Riesgos", icon: <AlertTriangle className="w-4 h-4" /> },
     { id: "documents", label: "Documentos", icon: <FolderOpen className="w-4 h-4" /> },
@@ -427,6 +499,20 @@ export function Project360() {
                     <span className="font-bold text-industrial-800 block mt-0.5">{adp.approvedAt ? formatDate(adp.approvedAt) : "Pendiente"}</span>
                   </div>
                 </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                  <div className="glass-panel p-4 rounded-xl bg-white shadow-sm">
+                    <h4 className="text-xs font-bold text-industrial-500 uppercase">Antecedentes del proyecto</h4>
+                    <p className="text-sm text-industrial-800 mt-1">{adp.projectBackground || "No capturado"}</p>
+                  </div>
+                  <div className="glass-panel p-4 rounded-xl bg-white shadow-sm">
+                    <h4 className="text-xs font-bold text-industrial-500 uppercase">Objetivo del proyecto</h4>
+                    <p className="text-sm text-industrial-800 mt-1">{adp.projectObjective || "No capturado"}</p>
+                  </div>
+                  <div className="glass-panel p-4 rounded-xl bg-white shadow-sm">
+                    <h4 className="text-xs font-bold text-industrial-500 uppercase">Alcance del entregable</h4>
+                    <p className="text-sm text-industrial-800 mt-1">{adp.deliverableScope || "No capturado"}</p>
+                  </div>
+                </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
                   <div className="space-y-4">
@@ -524,6 +610,13 @@ export function Project360() {
           </div>
         )}
 
+        {/* Tab Schedule: Cronograma WBS */}
+        {activeTab === "schedule" && (
+          <div className="space-y-6">
+            <WBSSchedule />
+          </div>
+        )}
+
         {/* Tab 5: Approvals */}
         {activeTab === "approvals" && (
           <div className="glass-panel p-6 rounded-2xl bg-white shadow-sm space-y-4">
@@ -541,7 +634,30 @@ export function Project360() {
         {activeTab === "risks" && (
           <div className="glass-panel p-6 rounded-2xl bg-white shadow-sm space-y-6">
             <h3 className="text-base font-bold text-industrial-950 font-heading">Matriz de Riesgos Inicial</h3>
-            
+            {/* Risk Form */}
+            <form onSubmit={handleAddRisk} className="glass-panel p-5 rounded-2xl bg-white shadow-sm flex flex-col md:flex-row gap-4 items-end mb-4">
+              <div className="flex-1">
+                <label className="block text-xs font-semibold text-industrial-500 mb-1.5 uppercase">Categoría</label>
+                <input type="text" required value={riskCategory} onChange={e => setRiskCategory(e.target.value)} placeholder="Ej. Seguridad" className="w-full text-sm border border-industrial-250/80 rounded-lg px-3 py-1.5 focus:ring-1 focus:ring-brand-500 focus:outline-none bg-industrial-50/20" />
+              </div>
+              <div className="flex-1">
+                <label className="block text-xs font-semibold text-industrial-500 mb-1.5 uppercase">Descripción</label>
+                <input type="text" required value={riskDescription} onChange={e => setRiskDescription(e.target.value)} placeholder="Descripción del riesgo" className="w-full text-sm border border-industrial-250/80 rounded-lg px-3 py-1.5 focus:ring-1 focus:ring-brand-500 focus:outline-none bg-industrial-50/20" />
+              </div>
+              <div className="w-24">
+                <label className="block text-xs font-semibold text-industrial-500 mb-1.5 uppercase">Prob.</label>
+                <input type="number" min="1" max="5" required value={riskProb} onChange={e => setRiskProb(parseInt(e.target.value))} className="w-full text-sm border border-industrial-250/80 rounded-lg px-3 py-1.5 focus:ring-1 focus:ring-brand-500 focus:outline-none bg-industrial-50/20" />
+              </div>
+              <div className="w-24">
+                <label className="block text-xs font-semibold text-industrial-500 mb-1.5 uppercase">Impacto</label>
+                <input type="number" min="1" max="5" required value={riskImpact} onChange={e => setRiskImpact(parseInt(e.target.value))} className="w-full text-sm border border-industrial-250/80 rounded-lg px-3 py-1.5 focus:ring-1 focus:ring-brand-500 focus:outline-none bg-industrial-50/20" />
+              </div>
+              <div className="flex-1">
+                <label className="block text-xs font-semibold text-industrial-500 mb-1.5 uppercase">Mitigación</label>
+                <input type="text" required value={riskMitigation} onChange={e => setRiskMitigation(e.target.value)} placeholder="Plan de mitigación" className="w-full text-sm border border-industrial-250/80 rounded-lg px-3 py-1.5 focus:ring-1 focus:ring-brand-500 focus:outline-none bg-industrial-50/20" />
+              </div>
+              <button type="submit" disabled={submitting} className="w-full md:w-auto px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-lg text-xs shadow-sm transition-smooth">Agregar Riesgo</button>
+            </form>
             {risks.length === 0 ? (
               <div className="text-center p-4 bg-industrial-100/40 rounded-lg text-sm text-industrial-500">
                 Ningún riesgo crítico documentado.
@@ -561,6 +677,11 @@ export function Project360() {
                       </div>
                       <p className="text-industrial-600 mt-1 leading-relaxed">{risk.description}</p>
                       <p className="text-industrial-500 mt-2"><span className="font-semibold">Mitigación:</span> {risk.mitigationPlan}</p>
+                      {risk.status !== "Closed" && (
+                        <button onClick={() => handleCloseRisk(risk.riskId)} disabled={submitting} className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded mt-2">
+                          Cerrar Riesgo
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -581,28 +702,55 @@ export function Project360() {
                 </div>
               ) : (
                 <div className="divide-y divide-industrial-100 font-sans text-xs">
-                  {documents.map(doc => (
-                    <div key={doc.documentId} className="py-3 flex justify-between items-center gap-4">
-                      <div>
-                        <a href={doc.fileUrl} target="_blank" rel="noreferrer" className="font-semibold text-brand-600 hover:underline">
-                          {doc.fileName}
-                        </a>
-                        <p className="text-industrial-450 mt-0.5">
-                          Tipo: {doc.documentType} • Subido por: {doc.uploadedBy.replace("usr-", "")}
-                        </p>
+                  {documents.map((doc) => {
+                    const uploaderName =
+                      doc.uploadedByName ||
+                      doc.userName ||
+                      doc.uploadedByEmail ||
+                      doc.uploadedBy ||
+                      "Usuario no identificado";
+
+                    const uploaderRole =
+                      doc.uploadedByRole ||
+                      doc.userRole ||
+                      "Sin rol asignado";
+
+                    const fileUrl = doc.downloadUrl || doc.fileUrl;
+
+                    return (
+                      <div key={doc.documentId || doc.id} className="py-3 flex justify-between items-center gap-4">
+                        <div>
+                          {fileUrl ? (
+                            <a
+                              href={fileUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="font-semibold text-brand-600 hover:underline"
+                            >
+                              {doc.fileName}
+                            </a>
+                          ) : (
+                            <span className="text-red-500">URL no disponible</span>
+                          )}
+
+                          <p className="text-industrial-450 mt-0.5">
+                            Tipo: {doc.documentType} • Subido por: {uploaderName} ({uploaderRole})
+                          </p>
+                        </div>
+
+                        <span className="text-[10px] bg-industrial-100 text-industrial-600 px-2 py-0.5 rounded border border-industrial-200">
+                          .{doc.fileExtension?.toUpperCase?.() || "FILE"}
+                        </span>
                       </div>
-                      <span className="text-[10px] bg-industrial-100 text-industrial-600 px-2 py-0.5 rounded border border-industrial-200">
-                        .{doc.fileExtension.toUpperCase()}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
 
             <div className="glass-panel p-6 rounded-2xl bg-white shadow-sm space-y-4">
               <h3 className="text-base font-bold text-industrial-950 font-heading">Subir Evidencia / Planos</h3>
-              <FileUploader onUpload={handleMockUpload} loading={submitting} />
+              <FileUploader onUpload={handleUpload} loading={submitting} />
             </div>
           </div>
         )}
