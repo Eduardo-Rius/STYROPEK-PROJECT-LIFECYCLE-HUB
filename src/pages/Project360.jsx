@@ -23,7 +23,7 @@ import { formatUSD, formatDate } from "../utils/formatters";
 
 // Tab imports / UI
 import ActionStatus from "../components/ui/ActionStatus";
-import ApprovalStatus from "../components/ui/ApprovalStatus";
+
 import AuditTrail from "../components/ui/AuditTrail";
 import FileUploader from "../components/ui/FileUploader";
 import WBSSchedule from "../components/ui/WBSSchedule";
@@ -313,8 +313,54 @@ export function Project360() {
         </div>
       </div>
 
+      {/* Project Health Section */}
+      <div className="mt-6 mb-2">
+        <h3 className="text-sm font-bold text-industrial-900 font-heading mb-3">Project Health</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="glass-panel p-4 rounded-xl bg-white shadow-sm border-l-4 border-emerald-500">
+            <span className="text-xs font-bold text-industrial-500 uppercase">Presupuesto</span>
+            <div className="flex items-end gap-2 mt-1">
+              <span className="text-2xl font-bold text-industrial-900">96%</span>
+              <span className="text-xs font-semibold text-emerald-600 mb-1">Verde</span>
+            </div>
+          </div>
+          <div className="glass-panel p-4 rounded-xl bg-white shadow-sm border-l-4 border-amber-500">
+            <span className="text-xs font-bold text-industrial-500 uppercase">Cronograma</span>
+            <div className="flex items-end gap-2 mt-1">
+              <span className="text-2xl font-bold text-industrial-900">82%</span>
+              <span className="text-xs font-semibold text-amber-600 mb-1">Amarillo</span>
+            </div>
+          </div>
+          <div className="glass-panel p-4 rounded-xl bg-white shadow-sm border-l-4 border-red-500">
+            <span className="text-xs font-bold text-industrial-500 uppercase">Riesgos</span>
+            <div className="flex items-end gap-2 mt-1">
+              <span className="text-2xl font-bold text-industrial-900">68%</span>
+              <span className="text-xs font-semibold text-red-600 mb-1">Rojo</span>
+            </div>
+          </div>
+          <div className="glass-panel p-4 rounded-xl bg-white shadow-sm border-l-4 border-emerald-500">
+            <span className="text-xs font-bold text-industrial-500 uppercase">Documentación</span>
+            <div className="flex items-end gap-2 mt-1">
+              <span className="text-2xl font-bold text-industrial-900">94%</span>
+              <span className="text-xs font-semibold text-emerald-600 mb-1">Verde</span>
+            </div>
+          </div>
+        </div>
+
+        {/* IA Executive Summary */}
+        <div className="mt-4 p-4 bg-brand-50 border border-brand-200 rounded-xl flex gap-3">
+          <Sparkles className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+          <div>
+            <span className="font-bold text-brand-800 uppercase tracking-wider text-[10px] block mb-1">IA Executive Summary</span>
+            <p className="text-industrial-700 leading-relaxed text-sm font-sans">
+              La IA detecta que el proyecto mantiene estabilidad presupuestal, pero presenta riesgo moderado en cronograma por actividades técnicas pendientes. Se recomienda revisar avances de ingeniería y documentación crítica antes de la siguiente reunión.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Tabs list */}
-      <div className="flex border-b border-industrial-200 overflow-x-auto gap-2 scrollbar-none">
+      <div className="flex border-b border-industrial-200 overflow-x-auto gap-2 scrollbar-none mt-4">
         {tabs.map(t => (
           <button
             key={t.id}
@@ -619,14 +665,112 @@ export function Project360() {
 
         {/* Tab 5: Approvals */}
         {activeTab === "approvals" && (
-          <div className="glass-panel p-6 rounded-2xl bg-white shadow-sm space-y-4">
-            <h3 className="text-base font-bold text-industrial-950 font-heading">Historial de Aprobaciones</h3>
-            <ApprovalStatus
-              approvals={approvals}
-              onApprove={(appId) => handleActionApproval(appId, true)}
-              onReject={(appId) => handleActionApproval(appId, false)}
-              currentUserId={user.uid}
-            />
+          <div className="space-y-6">
+            <div className="glass-panel p-6 rounded-2xl bg-white shadow-sm space-y-6">
+              <h3 className="text-base font-bold text-industrial-950 font-heading">Flujo de Aprobación Ejecutiva</h3>
+              
+              {/* Visual Workflow Bar */}
+              <div className="flex flex-col md:flex-row gap-4 md:gap-0 items-start md:items-center justify-between text-xs font-semibold relative w-full overflow-hidden py-2">
+                <div className="absolute top-1/2 left-4 md:left-0 w-0.5 md:w-full h-full md:h-1 bg-industrial-200 -z-10 transform -translate-x-1/2 md:-translate-x-0 md:-translate-y-1/2"></div>
+                
+                <div className="flex flex-row md:flex-col items-center gap-3 md:gap-2 bg-white pr-2 md:pr-0 md:px-2 z-10">
+                  <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center border-2 border-emerald-500 shadow-sm shrink-0"><CheckSquare className="w-4 h-4" /></div>
+                  <span className="text-emerald-700">Solicitud</span>
+                </div>
+                <div className="flex flex-row md:flex-col items-center gap-3 md:gap-2 bg-white pr-2 md:pr-0 md:px-2 z-10">
+                  <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center border-2 border-emerald-500 shadow-sm shrink-0"><CheckSquare className="w-4 h-4" /></div>
+                  <span className="text-emerald-700">Técnica</span>
+                </div>
+                <div className="flex flex-row md:flex-col items-center gap-3 md:gap-2 bg-white pr-2 md:pr-0 md:px-2 z-10">
+                  <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center border-2 border-blue-500 shadow-sm shrink-0"><Activity className="w-4 h-4" /></div>
+                  <span className="text-blue-700">MASH</span>
+                </div>
+                <div className="flex flex-row md:flex-col items-center gap-3 md:gap-2 bg-white pr-2 md:pr-0 md:px-2 z-10">
+                  <div className="w-8 h-8 rounded-full bg-industrial-100 text-industrial-400 flex items-center justify-center border-2 border-industrial-300 shadow-sm shrink-0"><Layers className="w-4 h-4" /></div>
+                  <span className="text-industrial-500">Contraloría</span>
+                </div>
+                <div className="flex flex-row md:flex-col items-center gap-3 md:gap-2 bg-white pr-2 md:pr-0 md:px-2 z-10">
+                  <div className="w-8 h-8 rounded-full bg-industrial-100 text-industrial-400 flex items-center justify-center border-2 border-industrial-300 shadow-sm shrink-0"><User className="w-4 h-4" /></div>
+                  <span className="text-industrial-500">Dirección</span>
+                </div>
+                <div className="flex flex-row md:flex-col items-center gap-3 md:gap-2 bg-white pr-2 md:pr-0 md:px-2 z-10">
+                  <div className="w-8 h-8 rounded-full bg-industrial-100 text-industrial-400 flex items-center justify-center border-2 border-industrial-300 shadow-sm shrink-0"><FileCheck2 className="w-4 h-4" /></div>
+                  <span className="text-industrial-500">Final</span>
+                </div>
+              </div>
+
+              {/* Table / List of Workflow Steps */}
+              <div className="overflow-x-auto mt-4">
+                <table className="w-full text-left text-sm font-sans border-collapse">
+                  <thead>
+                    <tr className="border-b border-industrial-200 text-xs text-industrial-500 uppercase tracking-wider">
+                      <th className="py-3 px-4 font-semibold">Etapa</th>
+                      <th className="py-3 px-4 font-semibold">Responsable</th>
+                      <th className="py-3 px-4 font-semibold">Estado</th>
+                      <th className="py-3 px-4 font-semibold">Fecha</th>
+                      <th className="py-3 px-4 font-semibold">Comentarios</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-industrial-100">
+                    <tr className="hover:bg-industrial-50/50 transition-colors">
+                      <td className="py-3 px-4 font-medium text-industrial-900">Solicitud de Inversión</td>
+                      <td className="py-3 px-4 text-industrial-600">Carlos Mendoza</td>
+                      <td className="py-3 px-4"><span className="px-2 py-1 rounded-md text-xs font-semibold bg-emerald-100 text-emerald-800">Aprobado</span></td>
+                      <td className="py-3 px-4 text-industrial-500">12/06/2026</td>
+                      <td className="py-3 px-4 text-industrial-600 text-xs">Alineado a presupuesto inicial.</td>
+                    </tr>
+                    <tr className="hover:bg-industrial-50/50 transition-colors">
+                      <td className="py-3 px-4 font-medium text-industrial-900">Revisión Técnica</td>
+                      <td className="py-3 px-4 text-industrial-600">Ingeniería Core</td>
+                      <td className="py-3 px-4"><span className="px-2 py-1 rounded-md text-xs font-semibold bg-emerald-100 text-emerald-800">Aprobado</span></td>
+                      <td className="py-3 px-4 text-industrial-500">15/06/2026</td>
+                      <td className="py-3 px-4 text-industrial-600 text-xs">Planos validados.</td>
+                    </tr>
+                    <tr className="hover:bg-industrial-50/50 transition-colors">
+                      <td className="py-3 px-4 font-medium text-industrial-900">MASH / Seguridad</td>
+                      <td className="py-3 px-4 text-industrial-600">Roberto Martínez</td>
+                      <td className="py-3 px-4"><span className="px-2 py-1 rounded-md text-xs font-semibold bg-blue-100 text-blue-800">En revisión</span></td>
+                      <td className="py-3 px-4 text-industrial-500">-</td>
+                      <td className="py-3 px-4 text-industrial-600 text-xs">Evaluando dictamen de tierras físicas.</td>
+                    </tr>
+                    <tr className="hover:bg-industrial-50/50 transition-colors opacity-60">
+                      <td className="py-3 px-4 font-medium text-industrial-900">Contraloría</td>
+                      <td className="py-3 px-4 text-industrial-600">Finanzas</td>
+                      <td className="py-3 px-4"><span className="px-2 py-1 rounded-md text-xs font-semibold bg-industrial-100 text-industrial-600">Pendiente</span></td>
+                      <td className="py-3 px-4 text-industrial-500">-</td>
+                      <td className="py-3 px-4 text-industrial-600 text-xs">-</td>
+                    </tr>
+                    <tr className="hover:bg-industrial-50/50 transition-colors opacity-60">
+                      <td className="py-3 px-4 font-medium text-industrial-900">Dirección</td>
+                      <td className="py-3 px-4 text-industrial-600">Dirección General</td>
+                      <td className="py-3 px-4"><span className="px-2 py-1 rounded-md text-xs font-semibold bg-industrial-100 text-industrial-600">Pendiente</span></td>
+                      <td className="py-3 px-4 text-industrial-500">-</td>
+                      <td className="py-3 px-4 text-industrial-600 text-xs">-</td>
+                    </tr>
+                    <tr className="hover:bg-industrial-50/50 transition-colors opacity-60">
+                      <td className="py-3 px-4 font-medium text-industrial-900">Aprobación Final</td>
+                      <td className="py-3 px-4 text-industrial-600">Comité CAPEX</td>
+                      <td className="py-3 px-4"><span className="px-2 py-1 rounded-md text-xs font-semibold bg-industrial-100 text-industrial-600">Pendiente</span></td>
+                      <td className="py-3 px-4 text-industrial-500">-</td>
+                      <td className="py-3 px-4 text-industrial-600 text-xs">-</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Next Recommended Action */}
+            <div className="glass-panel p-5 rounded-xl bg-white border-l-4 border-brand-500 shadow-sm flex items-start gap-4">
+              <div className="p-2 bg-brand-50 text-brand-600 rounded-lg shrink-0">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-industrial-900 font-heading">Próxima acción recomendada</h4>
+                <p className="text-sm text-industrial-700 mt-1 leading-relaxed">
+                  La siguiente acción es obtener validación MASH antes de liberar la etapa de ejecución.
+                </p>
+              </div>
+            </div>
           </div>
         )}
 
