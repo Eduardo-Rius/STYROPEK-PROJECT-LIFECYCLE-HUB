@@ -613,7 +613,7 @@ export function Project360() {
         {/* Tab Schedule: Cronograma WBS */}
         {activeTab === "schedule" && (
           <div className="space-y-6">
-            <WBSSchedule />
+            <WBSSchedule projectId={id} project={project} />
           </div>
         )}
 

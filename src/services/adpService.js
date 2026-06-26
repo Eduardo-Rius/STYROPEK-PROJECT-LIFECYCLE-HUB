@@ -1,12 +1,14 @@
-import { 
-  collection, 
-  doc, 
-  setDoc, 
-  getDocs, 
-  query, 
-  where, 
-  updateDoc, 
-  serverTimestamp 
+import {
+  collection,
+  doc,
+  setDoc,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  limit,
+  updateDoc,
+  serverTimestamp
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { adpSchema } from "../utils/validators";
@@ -20,6 +22,19 @@ import { createAuditLog } from "./auditService";
  */
 export async function createADP(adpData, userId) {
   const adpId = adpData.adpId || doc(collection(db, "adps")).id;
+  
+  const getActionStyle = (action) => {
+    switch (action) {
+      case "APPROVAL_REQUESTED": return "bg-indigo-500 text-white";
+      case "APPROVAL_APPROVED": return "bg-success text-white";
+      case "APPROVAL_REJECTED": return "bg-danger text-white";
+      case "RISK_CLOSED": return "bg-amber-500 text-white";
+      case "DOCUMENT_UPLOADED": return "bg-purple-500 text-white";
+      case "ACTION_CREATED": return "bg-emerald-500 text-white";
+      case "ACTION_COMPLETED": return "bg-brand-500 text-white";
+      default: return "bg-industrial-500 text-white";
+    }
+  };
   
   const rawAdp = {
     ...adpData,
@@ -43,7 +58,7 @@ export async function createADP(adpData, userId) {
   await createAuditLog({
     projectId: adpData.projectId,
     userId,
-    action: "ADP_CREATED",
+    action: "DOCUMENT_UPLOADED",
     module: "ADP",
     newValue: rawAdp
   });
@@ -61,7 +76,9 @@ export async function getADPByProject(projectId) {
   
   const q = query(
     collection(db, "adps"),
-    where("projectId", "==", projectId)
+    where("projectId", "==", projectId),
+    orderBy("version", "desc"),
+    limit(1)
   );
   
   const querySnapshot = await getDocs(q);
@@ -91,7 +108,7 @@ export async function updateADP(adpId, adpData, userId) {
   await createAuditLog({
     projectId: adpData.projectId,
     userId,
-    action: "ADP_UPDATED",
+    action: "ACTION_COMPLETED",
     module: "ADP",
     newValue: rawUpdate
   });
@@ -104,6 +121,19 @@ export async function updateADP(adpId, adpData, userId) {
  * @param {string} userId 
  */
 export async function approveADP(adpId, projectId, userId) {
+  const getActionLabel = (action) => {
+    switch (action) {
+      case "APPROVAL_REQUESTED": return "Solicitud de Aprobación";
+      case "APPROVAL_APPROVED": return "Aprobado";
+      case "APPROVAL_REJECTED": return "Rechazado";
+      case "RISK_CLOSED": return "Riesgo Cerrado";
+      case "DOCUMENT_UPLOADED": return "Documento Subido";
+      case "ACTION_CREATED": return "Acción Creada";
+      case "ACTION_COMPLETED": return "Acción Completada";
+      default: return action;
+    }
+  };
+
   const docRef = doc(db, "adps", adpId);
   
   await updateDoc(docRef, {
@@ -115,7 +145,7 @@ export async function approveADP(adpId, projectId, userId) {
   await createAuditLog({
     projectId,
     userId,
-    action: "APPROVE",
+    action: "APPROVAL_APPROVED",
     module: "ADP",
     newValue: { status: "Approved" }
   });

@@ -20,6 +20,7 @@ import { createAuditLog } from "./auditService";
  * @returns {Promise<string>} Created actionId
  */
 export async function createActionItem(actionData, userId) {
+  // original implementation unchanged
   if (!actionData.responsibleUserId) {
     throw new Error("RN-06: Toda acción debe tener responsable.");
   }
@@ -57,7 +58,7 @@ export async function createActionItem(actionData, userId) {
   await createAuditLog({
     projectId: actionData.projectId,
     userId,
-    action: "CREATE",
+    action: "ACTION_CREATED",
     module: "ACTION_ITEM",
     newValue: rawAction
   });

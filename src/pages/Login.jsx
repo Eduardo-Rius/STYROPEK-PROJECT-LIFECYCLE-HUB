@@ -4,6 +4,7 @@ import { Lock, Mail, Server, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { register as authRegister, createUserDoc } from "../services/authService";
 import { SEED_USERS } from "../data/seedData";
+import { DemoRolesGrid } from "../components/ui/DemoRolesGrid";
 import styropekLogo from "../assets/styropek-logo.webp";
 
 export function Login() {
@@ -13,8 +14,10 @@ export function Login() {
   const [loginError, setLoginError] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -36,7 +39,8 @@ export function Login() {
     setLoginError(null);
     try {
       await login(demoEmail, "password123");
-
+      // Successful login, navigate to dashboard
+      navigate("/", { replace: true });
     } catch (err) {
       console.warn("Login failed, attempting auto-provisioning...", err);
       const seedUser = SEED_USERS.find(u => u.email === demoEmail);
@@ -169,40 +173,7 @@ export function Login() {
             </button>
           </form>
 
-          {/* Quick Login Shortcuts */}
-          <div className="border-t border-white/5 pt-5">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-industrial-300 uppercase tracking-wider mb-3">
-              <Server className="w-3.5 h-3.5 text-brand-400" />
-              <span>Accesos Demo Rápidos (Contraseña: password123)</span>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <button
-                onClick={() => handleQuickLogin("director@styropek.com")}
-                className="py-1.5 px-2.5 bg-white/5 border border-white/10 text-white rounded hover:bg-white/10 text-left transition-smooth"
-              >
-                Director CAPEX
-              </button>
-              <button
-                onClick={() => handleQuickLogin("leader@styropek.com")}
-                className="py-1.5 px-2.5 bg-white/5 border border-white/10 text-white rounded hover:bg-white/10 text-left transition-smooth"
-              >
-                Líder de Proyecto
-              </button>
-              <button
-                onClick={() => handleQuickLogin("admin@styropek.com")}
-                className="py-1.5 px-2.5 bg-white/5 border border-white/10 text-white rounded hover:bg-white/10 text-left transition-smooth"
-              >
-                Administrador
-              </button>
-              <button
-                onClick={() => handleQuickLogin("solicitante@styropek.com")}
-                className="py-1.5 px-2.5 bg-white/5 border border-white/10 text-white rounded hover:bg-white/10 text-left transition-smooth"
-              >
-                Solicitante
-              </button>
-            </div>
-          </div>
+          <DemoRolesGrid onLogin={handleQuickLogin} />
         </div>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import { 
   collection, 
   doc, 
+  getDoc,
   setDoc, 
   getDocs, 
   query, 
@@ -121,5 +122,29 @@ export async function deleteRisk(riskId, projectId, userId) {
     action: "DELETE_RISK",
     module: "RISK",
     newValue: { riskId }
+  });
+}
+
+/**
+ * Closes a risk entry by setting its status to 'Closed'.
+ * @param {string} riskId
+ * @param {string} userId - User performing the closure.
+ */
+export async function closeRisk(riskId, userId) {
+  const docRef = doc(db, "risks", riskId);
+  const rawUpdate = {
+    status: "Closed",
+    updatedAt: serverTimestamp()
+  };
+  await updateDoc(docRef, rawUpdate);
+  // Fetch projectId for audit log
+  const docSnap = await getDoc(docRef);
+  const projectId = docSnap.exists() ? docSnap.data().projectId : null;
+  await createAuditLog({
+    projectId,
+    userId,
+    action: "RISK_CLOSED",
+    module: "RISK",
+    newValue: rawUpdate
   });
 }

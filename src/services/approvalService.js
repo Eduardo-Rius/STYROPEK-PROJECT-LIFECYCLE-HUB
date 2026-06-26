@@ -49,13 +49,15 @@ export async function requestApproval(approvalData, userId) {
   await createAuditLog({
     projectId: approvalData.projectId,
     userId,
-    action: "REQUEST_APPROVAL",
+    action: "APPROVAL_REQUESTED",
     module: "APPROVAL",
     newValue: rawApproval
   });
 
   return approvalId;
 }
+
+export const createApproval = requestApproval;
 
 /**
  * Approves a request.
@@ -84,7 +86,7 @@ export async function approve(approvalId, comments = "", userId) {
   await createAuditLog({
     projectId: data.projectId,
     userId,
-    action: "APPROVE",
+    action: "APPROVAL_APPROVED",
     module: "APPROVAL",
     previousValue: { status: data.status, comments: data.comments },
     newValue: { status: "Approved", comments }
@@ -118,11 +120,17 @@ export async function reject(approvalId, comments = "", userId) {
   await createAuditLog({
     projectId: data.projectId,
     userId,
-    action: "REJECT",
+    action: "APPROVAL_REJECTED",
     module: "APPROVAL",
     previousValue: { status: data.status, comments: data.comments },
     newValue: { status: "Rejected", comments }
   });
+}
+
+export async function updateApprovalStatus(approvalId, status, comments, userId) {
+  if (status === 'Approved') return approve(approvalId, comments, userId);
+  if (status === 'Rejected') return reject(approvalId, comments, userId);
+  throw new Error("Invalid status");
 }
 
 /**

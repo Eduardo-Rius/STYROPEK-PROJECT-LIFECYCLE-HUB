@@ -1,250 +1,156 @@
-import React, { useState } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { ChevronDown, ChevronRight, X, Sparkles, AlertTriangle, CheckSquare, FileText } from "lucide-react";
 
-export default function WBSSchedule() {
-  const [data, setData] = useState([
+const datasets = {
+  "proj-contractor-dining": [
     {
-      id: "wbs-1",
-      wbsLevel: "1.0",
-      stage: "Inicio",
-      isStage: true,
-      expanded: true,
+      id: "wbs-1", wbsLevel: "1.0", stage: "Inicio", isStage: true, expanded: true,
       children: [
-        {
-          id: "wbs-1-1",
-          wbsLevel: "1.1",
-          stage: "Inicio",
-          discipline: "General",
-          activity: "Kick-off Meeting",
-          responsible: "Líder de Proyecto",
-          startDate: "2024-01-10",
-          endDate: "2024-01-10",
-          duration: "1 d",
-          progress: 100,
-          status: "Terminada",
-          observations: "Acta firmada"
-        },
-        {
-          id: "wbs-1-2",
-          wbsLevel: "1.2",
-          stage: "Inicio",
-          discipline: "General",
-          activity: "Aprobación de CAPEX",
-          responsible: "Dirección",
-          startDate: "2024-01-15",
-          endDate: "2024-02-15",
-          duration: "30 d",
-          progress: 100,
-          status: "Terminada",
-          observations: "Presupuesto liberado"
-        }
+        { id: "wbs-1-1", wbsLevel: "1.1", stage: "Inicio", discipline: "General", activity: "Kick-off Comedor", responsible: "Líder de Proyecto", startDate: "2024-01-10", endDate: "2024-01-10", duration: "1 d", progress: 100, status: "Terminada", observations: "Acta firmada" },
+        { id: "wbs-1-2", wbsLevel: "1.2", stage: "Inicio", discipline: "General", activity: "Aprobación de Presupuesto", responsible: "Dirección", startDate: "2024-01-15", endDate: "2024-02-15", duration: "30 d", progress: 100, status: "Terminada", observations: "Liberado" }
       ]
     },
     {
-      id: "wbs-2",
-      wbsLevel: "2.0",
-      stage: "Ingeniería",
-      isStage: true,
-      expanded: true,
+      id: "wbs-2", wbsLevel: "2.0", stage: "Ingeniería", isStage: true, expanded: true,
       children: [
-        {
-          id: "wbs-2-1",
-          wbsLevel: "2.1",
-          stage: "Ingeniería",
-          discipline: "Proceso",
-          activity: "Ingeniería Básica",
-          responsible: "Carlos Mendoza",
-          startDate: "2024-03-01",
-          endDate: "2024-04-15",
-          duration: "45 d",
-          progress: 100,
-          status: "Terminada",
-          observations: "Aprobada por operaciones"
-        },
-        {
-          id: "wbs-2-2",
-          wbsLevel: "2.2",
-          stage: "Ingeniería",
-          discipline: "Mecánica",
-          activity: "Ingeniería de Detalle",
-          responsible: "Daniel Torres",
-          startDate: "2024-04-16",
-          endDate: "2024-06-30",
-          duration: "75 d",
-          progress: 60,
-          status: "En Proceso",
-          observations: "Retraso en planos mecánicos"
-        },
-        {
-          id: "wbs-2-3",
-          wbsLevel: "2.3",
-          stage: "Ingeniería",
-          discipline: "Eléctrica",
-          activity: "Ingeniería Eléctrica",
-          responsible: "Ana Rojas",
-          startDate: "2024-05-01",
-          endDate: "2024-06-15",
-          duration: "45 d",
-          progress: 0,
-          status: "Pendiente",
-          observations: ""
-        }
+        { id: "wbs-2-1", wbsLevel: "2.1", stage: "Ingeniería", discipline: "Arquitectura", activity: "Diseño Arquitectónico", responsible: "Carlos Mendoza", startDate: "2024-03-01", endDate: "2024-04-15", duration: "45 d", progress: 100, status: "Terminada", observations: "Aprobado" },
+        { id: "wbs-2-2", wbsLevel: "2.2", stage: "Ingeniería", discipline: "Civil", activity: "Ingeniería Estructural", responsible: "Daniel Torres", startDate: "2024-04-16", endDate: "2024-06-30", duration: "75 d", progress: 60, status: "En Proceso", observations: "En revisión" }
       ]
     },
     {
-      id: "wbs-3",
-      wbsLevel: "3.0",
-      stage: "Procura",
-      isStage: true,
-      expanded: true,
+      id: "wbs-3", wbsLevel: "3.0", stage: "Procura", isStage: true, expanded: true,
       children: [
-        {
-          id: "wbs-3-1",
-          wbsLevel: "3.1",
-          stage: "Procura",
-          discipline: "Procura",
-          activity: "Compra Equipos Críticos",
-          responsible: "María Fernanda",
-          startDate: "2024-05-15",
-          endDate: "2024-08-30",
-          duration: "105 d",
-          progress: 25,
-          status: "En Riesgo",
-          observations: "Proveedor reporta demoras en compresor"
-        },
-        {
-          id: "wbs-3-2",
-          wbsLevel: "3.2",
-          stage: "Procura",
-          discipline: "Procura",
-          activity: "Compra Materiales Generales",
-          responsible: "María Fernanda",
-          startDate: "2024-07-01",
-          endDate: "2024-09-15",
-          duration: "75 d",
-          progress: 0,
-          status: "Pendiente",
-          observations: ""
-        }
+        { id: "wbs-3-1", wbsLevel: "3.1", stage: "Procura", discipline: "Procura", activity: "Mobiliario Inoxidable", responsible: "María Fernanda", startDate: "2024-05-15", endDate: "2024-08-30", duration: "105 d", progress: 25, status: "En Riesgo", observations: "Proveedor demorado" }
       ]
     },
     {
-      id: "wbs-4",
-      wbsLevel: "4.0",
-      stage: "Ejecución",
-      isStage: true,
-      expanded: true,
+      id: "wbs-4", wbsLevel: "4.0", stage: "Ejecución", isStage: true, expanded: true,
       children: [
-        {
-          id: "wbs-4-1",
-          wbsLevel: "4.1",
-          stage: "Ejecución",
-          discipline: "Civil",
-          activity: "Obra Civil y Cimentaciones",
-          responsible: "Contratista A",
-          startDate: "2024-06-01",
-          endDate: "2024-07-30",
-          duration: "60 d",
-          progress: 10,
-          status: "En Proceso",
-          observations: "Lluvias han afectado el avance"
-        },
-        {
-          id: "wbs-4-2",
-          wbsLevel: "4.2",
-          stage: "Ejecución",
-          discipline: "Mecánica",
-          activity: "Instalación Mecánica",
-          responsible: "Contratista B",
-          startDate: "2024-08-01",
-          endDate: "2024-10-15",
-          duration: "75 d",
-          progress: 0,
-          status: "Pendiente",
-          observations: ""
-        },
-        {
-          id: "wbs-4-3",
-          wbsLevel: "4.3",
-          stage: "Ejecución",
-          discipline: "Instrumentación",
-          activity: "Montaje de Instrumentos",
-          responsible: "Contratista C",
-          startDate: "2024-09-15",
-          endDate: "2024-10-30",
-          duration: "45 d",
-          progress: 0,
-          status: "Pendiente",
-          observations: ""
-        },
-        {
-          id: "wbs-4-4",
-          wbsLevel: "4.4",
-          stage: "Ejecución",
-          discipline: "Proceso",
-          activity: "Pruebas y Comisionamiento",
-          responsible: "Operaciones",
-          startDate: "2024-11-01",
-          endDate: "2024-11-30",
-          duration: "30 d",
-          progress: 0,
-          status: "Pendiente",
-          observations: ""
-        },
-        {
-          id: "wbs-4-5",
-          wbsLevel: "4.5",
-          stage: "Ejecución",
-          discipline: "General",
-          activity: "Arranque de Planta",
-          responsible: "Operaciones",
-          startDate: "2024-12-01",
-          endDate: "2024-12-15",
-          duration: "15 d",
-          progress: 0,
-          status: "Pendiente",
-          observations: ""
-        }
+        { id: "wbs-4-1", wbsLevel: "4.1", stage: "Ejecución", discipline: "Civil", activity: "Cimentación y Firme", responsible: "Contratista A", startDate: "2024-06-01", endDate: "2024-07-30", duration: "60 d", progress: 10, status: "En Proceso", observations: "Lluvias" }
       ]
     },
     {
-      id: "wbs-5",
-      wbsLevel: "5.0",
-      stage: "Cierre",
-      isStage: true,
-      expanded: false,
+      id: "wbs-5", wbsLevel: "5.0", stage: "Cierre", isStage: true, expanded: false,
       children: [
-        {
-          id: "wbs-5-1",
-          wbsLevel: "5.1",
-          stage: "Cierre",
-          discipline: "General",
-          activity: "Entrega a Operaciones",
-          responsible: "Líder de Proyecto",
-          startDate: "2024-12-16",
-          endDate: "2024-12-20",
-          duration: "5 d",
-          progress: 0,
-          status: "Pendiente",
-          observations: ""
-        },
-        {
-          id: "wbs-5-2",
-          wbsLevel: "5.2",
-          stage: "Cierre",
-          discipline: "General",
-          activity: "Capitalización del Activo",
-          responsible: "Finanzas",
-          startDate: "2024-12-20",
-          endDate: "2025-01-15",
-          duration: "25 d",
-          progress: 0,
-          status: "Pendiente",
-          observations: ""
-        }
+        { id: "wbs-5-1", wbsLevel: "5.1", stage: "Cierre", discipline: "General", activity: "Entrega a RH", responsible: "Líder de Proyecto", startDate: "2024-12-16", endDate: "2024-12-20", duration: "5 d", progress: 0, status: "Pendiente", observations: "" }
       ]
     }
-  ]);
+  ],
+  "proj-sap-fiori": [
+    {
+      id: "wbs-1", wbsLevel: "1.0", stage: "Inicio", isStage: true, expanded: true,
+      children: [
+        { id: "wbs-1-1", wbsLevel: "1.1", stage: "Inicio", discipline: "General", activity: "Levantamiento de Requerimientos", responsible: "PMO IT", startDate: "2024-02-01", endDate: "2024-02-15", duration: "15 d", progress: 100, status: "Terminada", observations: "Documento BRD firmado" }
+      ]
+    },
+    {
+      id: "wbs-2", wbsLevel: "2.0", stage: "Ingeniería", isStage: true, expanded: true,
+      children: [
+        { id: "wbs-2-1", wbsLevel: "2.1", stage: "Ingeniería", discipline: "Automatización / Control", activity: "Diseño UX/UI Fiori Apps", responsible: "Consultor SAP", startDate: "2024-02-16", endDate: "2024-03-30", duration: "45 d", progress: 100, status: "Terminada", observations: "Mockups aprobados" },
+        { id: "wbs-2-2", wbsLevel: "2.2", stage: "Ingeniería", discipline: "Automatización / Control", activity: "Arquitectura de Integración", responsible: "Arquitecto IT", startDate: "2024-03-01", endDate: "2024-04-15", duration: "45 d", progress: 80, status: "En Proceso", observations: "Ajustando OData services" }
+      ]
+    },
+    {
+      id: "wbs-3", wbsLevel: "3.0", stage: "Procura", isStage: true, expanded: true,
+      children: [
+        { id: "wbs-3-1", wbsLevel: "3.1", stage: "Procura", discipline: "Procura", activity: "Licencias SAP Fiori", responsible: "Compras IT", startDate: "2024-04-01", endDate: "2024-04-30", duration: "30 d", progress: 100, status: "Terminada", observations: "Adquiridas" }
+      ]
+    },
+    {
+      id: "wbs-4", wbsLevel: "4.0", stage: "Ejecución", isStage: true, expanded: true,
+      children: [
+        { id: "wbs-4-1", wbsLevel: "4.1", stage: "Ejecución", discipline: "Automatización / Control", activity: "Desarrollo Frontend", responsible: "Desarrollador Fiori", startDate: "2024-05-01", endDate: "2024-07-15", duration: "75 d", progress: 40, status: "En Riesgo", observations: "Falta personal" },
+        { id: "wbs-4-2", wbsLevel: "4.2", stage: "Ejecución", discipline: "Automatización / Control", activity: "Pruebas UAT", responsible: "Key Users", startDate: "2024-07-16", endDate: "2024-08-15", duration: "30 d", progress: 0, status: "Pendiente", observations: "" }
+      ]
+    },
+    {
+      id: "wbs-5", wbsLevel: "5.0", stage: "Cierre", isStage: true, expanded: false,
+      children: [
+        { id: "wbs-5-1", wbsLevel: "5.1", stage: "Cierre", discipline: "General", activity: "Go-Live y Soporte", responsible: "PMO IT", startDate: "2024-08-16", endDate: "2024-09-15", duration: "30 d", progress: 0, status: "Pendiente", observations: "" }
+      ]
+    }
+  ],
+  "proj-waste-warehouse": [
+    {
+      id: "wbs-1", wbsLevel: "1.0", stage: "Inicio", isStage: true, expanded: true,
+      children: [
+        { id: "wbs-1-1", wbsLevel: "1.1", stage: "Inicio", discipline: "Ambiental", activity: "Evaluación Impacto Ambiental", responsible: "Gestor Ambiental", startDate: "2024-01-05", endDate: "2024-02-28", duration: "55 d", progress: 100, status: "Terminada", observations: "Permisos listos" }
+      ]
+    },
+    {
+      id: "wbs-2", wbsLevel: "2.0", stage: "Ingeniería", isStage: true, expanded: true,
+      children: [
+        { id: "wbs-2-1", wbsLevel: "2.1", stage: "Ingeniería", discipline: "Civil", activity: "Planos Nave Industrial", responsible: "Ingeniería", startDate: "2024-03-01", endDate: "2024-04-30", duration: "60 d", progress: 90, status: "En Proceso", observations: "Revisión final" },
+        { id: "wbs-2-2", wbsLevel: "2.2", stage: "Ingeniería", discipline: "Ambiental", activity: "Diseño Sistemas Contención", responsible: "Ingeniería", startDate: "2024-04-01", endDate: "2024-05-15", duration: "45 d", progress: 10, status: "En Riesgo", observations: "Dudas normativas" }
+      ]
+    },
+    {
+      id: "wbs-3", wbsLevel: "3.0", stage: "Procura", isStage: true, expanded: true,
+      children: [
+        { id: "wbs-3-1", wbsLevel: "3.1", stage: "Procura", discipline: "Procura", activity: "Licitación Constructora", responsible: "Procura", startDate: "2024-05-16", endDate: "2024-06-30", duration: "45 d", progress: 0, status: "Pendiente", observations: "" }
+      ]
+    },
+    {
+      id: "wbs-4", wbsLevel: "4.0", stage: "Ejecución", isStage: true, expanded: true,
+      children: [
+        { id: "wbs-4-1", wbsLevel: "4.1", stage: "Ejecución", discipline: "Civil", activity: "Construcción Almacén", responsible: "Contratista", startDate: "2024-07-01", endDate: "2024-10-31", duration: "120 d", progress: 0, status: "Pendiente", observations: "" },
+        { id: "wbs-4-2", wbsLevel: "4.2", stage: "Ejecución", discipline: "Seguridad Industrial", activity: "Instalación Red Contra Incendio", responsible: "Contratista Especializado", startDate: "2024-09-01", endDate: "2024-10-31", duration: "60 d", progress: 0, status: "Pendiente", observations: "" }
+      ]
+    },
+    {
+      id: "wbs-5", wbsLevel: "5.0", stage: "Cierre", isStage: true, expanded: false,
+      children: [
+        { id: "wbs-5-1", wbsLevel: "5.1", stage: "Cierre", discipline: "Ambiental", activity: "Certificación PROFEPA", responsible: "Gestor Ambiental", startDate: "2024-11-01", endDate: "2024-12-30", duration: "60 d", progress: 0, status: "Pendiente", observations: "" }
+      ]
+    }
+  ],
+  "generic": [
+    {
+      id: "wbs-1", wbsLevel: "1.0", stage: "Inicio", isStage: true, expanded: true,
+      children: [
+        { id: "wbs-1-1", wbsLevel: "1.1", stage: "Inicio", discipline: "General", activity: "Kick-off Meeting", responsible: "Líder de Proyecto", startDate: "2024-01-10", endDate: "2024-01-10", duration: "1 d", progress: 100, status: "Terminada", observations: "Acta firmada" },
+        { id: "wbs-1-2", wbsLevel: "1.2", stage: "Inicio", discipline: "General", activity: "Aprobación de CAPEX", responsible: "Dirección", startDate: "2024-01-15", endDate: "2024-02-15", duration: "30 d", progress: 100, status: "Terminada", observations: "Presupuesto liberado" }
+      ]
+    },
+    {
+      id: "wbs-2", wbsLevel: "2.0", stage: "Ingeniería", isStage: true, expanded: true,
+      children: [
+        { id: "wbs-2-1", wbsLevel: "2.1", stage: "Ingeniería", discipline: "Proceso", activity: "Ingeniería Básica", responsible: "Ingeniería", startDate: "2024-03-01", endDate: "2024-04-15", duration: "45 d", progress: 100, status: "Terminada", observations: "Aprobada" },
+        { id: "wbs-2-2", wbsLevel: "2.2", stage: "Ingeniería", discipline: "Mecánica", activity: "Ingeniería de Detalle", responsible: "Ingeniería", startDate: "2024-04-16", endDate: "2024-06-30", duration: "75 d", progress: 60, status: "En Proceso", observations: "En revisión" }
+      ]
+    },
+    {
+      id: "wbs-3", wbsLevel: "3.0", stage: "Procura", isStage: true, expanded: true,
+      children: [
+        { id: "wbs-3-1", wbsLevel: "3.1", stage: "Procura", discipline: "Procura", activity: "Compra Materiales", responsible: "Compras", startDate: "2024-07-01", endDate: "2024-09-15", duration: "75 d", progress: 20, status: "En Proceso", observations: "" }
+      ]
+    },
+    {
+      id: "wbs-4", wbsLevel: "4.0", stage: "Ejecución", isStage: true, expanded: true,
+      children: [
+        { id: "wbs-4-1", wbsLevel: "4.1", stage: "Ejecución", discipline: "General", activity: "Ejecución en Sitio", responsible: "Contratista", startDate: "2024-08-01", endDate: "2024-10-15", duration: "75 d", progress: 0, status: "Pendiente", observations: "" }
+      ]
+    },
+    {
+      id: "wbs-5", wbsLevel: "5.0", stage: "Cierre", isStage: true, expanded: false,
+      children: [
+        { id: "wbs-5-1", wbsLevel: "5.1", stage: "Cierre", discipline: "General", activity: "Entrega Final", responsible: "PM", startDate: "2024-12-16", endDate: "2024-12-20", duration: "5 d", progress: 0, status: "Pendiente", observations: "" }
+      ]
+    }
+  ]
+};
+
+export default function WBSSchedule({ projectId, project }) {
+  const [data, setData] = useState([]);
+  const [selectedActivity, setSelectedActivity] = useState(null);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+
+  useEffect(() => {
+    // Load dataset based on projectId or fallback to generic
+    const selectedData = datasets[projectId] || datasets["generic"];
+    // Deep clone to allow independent expand/collapse state without mutating original
+    setData(JSON.parse(JSON.stringify(selectedData)));
+  }, [projectId]);
 
   const toggleExpand = (id) => {
     setData((prev) =>
@@ -290,6 +196,8 @@ export default function WBSSchedule() {
     return "bg-brand-500";
   };
 
+  if (data.length === 0) return null;
+
   return (
     <div className="space-y-6">
       {/* KPIs Superiores */}
@@ -317,7 +225,10 @@ export default function WBSSchedule() {
         <div className="p-5 border-b border-industrial-100 flex justify-between items-center bg-industrial-50/50">
           <div>
             <h3 className="text-base font-bold text-industrial-950 font-heading">Estructura Desglosada del Trabajo (WBS)</h3>
-            <p className="text-xs text-industrial-500 mt-1">Plan de ejecución y control de actividades base para el cronograma.</p>
+            <p className="text-xs text-industrial-500 mt-1">
+              Plan de ejecución y control de actividades base para el cronograma 
+              {project?.projectName ? ` de ${project.projectName}` : ""}.
+            </p>
           </div>
         </div>
 
@@ -358,7 +269,14 @@ export default function WBSSchedule() {
                   
                   {/* Filas de Actividades (Children) */}
                   {stage.expanded && stage.children.map((task) => (
-                    <tr key={task.id} className="hover:bg-brand-50/30 transition-colors">
+                    <tr 
+                      key={task.id} 
+                      className="hover:bg-brand-50/30 transition-colors cursor-pointer"
+                      onClick={() => {
+                        setSelectedActivity(task);
+                        setIsPanelOpen(true);
+                      }}
+                    >
                       <td className="px-4 py-3 pl-8 text-industrial-500 font-mono text-[11px]">{task.wbsLevel}</td>
                       <td className="px-4 py-3 text-industrial-800 font-medium">{task.activity}</td>
                       <td className="px-4 py-3 text-industrial-600">{task.discipline}</td>
@@ -390,6 +308,139 @@ export default function WBSSchedule() {
           </table>
         </div>
       </div>
+
+      {/* Overlay & Side Panel */}
+      {isPanelOpen && selectedActivity && (
+        <>
+          <div 
+            className="fixed inset-0 bg-black/20 z-40 transition-opacity"
+            onClick={() => setIsPanelOpen(false)}
+          ></div>
+          <div className="fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl z-50 overflow-y-auto flex flex-col transform transition-transform duration-300">
+            {/* Panel Header */}
+            <div className="flex items-center justify-between p-5 border-b border-industrial-100 bg-industrial-50/50">
+              <div>
+                <span className="text-[10px] font-bold text-brand-600 uppercase tracking-wider">{selectedActivity.wbsLevel} • {selectedActivity.stage}</span>
+                <h3 className="text-lg font-bold text-industrial-950 font-heading leading-tight mt-1">{selectedActivity.activity}</h3>
+              </div>
+              <button 
+                onClick={() => setIsPanelOpen(false)}
+                className="p-1.5 rounded-lg text-industrial-400 hover:text-industrial-700 hover:bg-industrial-100 transition-smooth"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Panel Body */}
+            <div className="p-6 space-y-6 flex-1">
+              
+              {/* Properties Grid */}
+              <div className="grid grid-cols-2 gap-4 text-xs font-sans">
+                <div>
+                  <span className="block text-industrial-400 font-semibold mb-1 uppercase text-[10px]">Estatus</span>
+                  {getStatusBadge(selectedActivity.status)}
+                </div>
+                <div>
+                  <span className="block text-industrial-400 font-semibold mb-1 uppercase text-[10px]">Avance</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-industrial-900">{selectedActivity.progress}%</span>
+                    <div className="w-full bg-industrial-200 rounded-full h-1.5 flex-1">
+                      <div 
+                        className={`h-1.5 rounded-full ${getProgressBarColor(selectedActivity.status, selectedActivity.progress)}`} 
+                        style={{ width: `${selectedActivity.progress}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <span className="block text-industrial-400 font-semibold mb-1 uppercase text-[10px]">Disciplina</span>
+                  <span className="font-semibold text-industrial-800">{selectedActivity.discipline}</span>
+                </div>
+                <div>
+                  <span className="block text-industrial-400 font-semibold mb-1 uppercase text-[10px]">Responsable</span>
+                  <span className="font-semibold text-industrial-800">{selectedActivity.responsible}</span>
+                </div>
+                <div>
+                  <span className="block text-industrial-400 font-semibold mb-1 uppercase text-[10px]">Fecha Inicio</span>
+                  <span className="font-semibold text-industrial-800">{selectedActivity.startDate}</span>
+                </div>
+                <div>
+                  <span className="block text-industrial-400 font-semibold mb-1 uppercase text-[10px]">Fecha Fin</span>
+                  <span className="font-semibold text-industrial-800">{selectedActivity.endDate}</span>
+                </div>
+                <div>
+                  <span className="block text-industrial-400 font-semibold mb-1 uppercase text-[10px]">Duración</span>
+                  <span className="font-semibold text-industrial-800">{selectedActivity.duration}</span>
+                </div>
+                <div className="col-span-2">
+                  <span className="block text-industrial-400 font-semibold mb-1 uppercase text-[10px]">Observaciones</span>
+                  <span className="font-semibold text-industrial-800 block">{selectedActivity.observations || "Ninguna"}</span>
+                </div>
+              </div>
+
+              {/* Impacto en Proyecto */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-bold text-industrial-950 font-heading border-b border-industrial-100 pb-2">Impacto en Proyecto 360°</h4>
+                <div className="grid grid-cols-1 gap-2">
+                  <div className="p-3 bg-industrial-50 border border-industrial-200 rounded-lg flex gap-3">
+                    <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <span className="block text-[10px] font-bold text-industrial-500 uppercase">Riesgo Asociado</span>
+                      <span className="text-xs text-industrial-800 mt-0.5 block">
+                        {selectedActivity.status === "En Riesgo" ? "Actividad con desviación potencial en fecha compromiso" :
+                         selectedActivity.status === "En Proceso" ? "Sin riesgo crítico detectado" :
+                         selectedActivity.status === "Terminada" ? "Sin riesgo activo" :
+                         "Dependencia por iniciar"}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-3 bg-industrial-50 border border-industrial-200 rounded-lg flex gap-3">
+                    <CheckSquare className="w-4 h-4 text-brand-500 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <span className="block text-[10px] font-bold text-industrial-500 uppercase">Acción Pendiente</span>
+                      <span className="text-xs text-industrial-800 mt-0.5 block">
+                        {selectedActivity.status === "En Riesgo" ? "Revisar plan de mitigación con responsable" :
+                         selectedActivity.status === "En Proceso" ? "Actualizar porcentaje de avance semanal" :
+                         selectedActivity.status === "Terminada" ? "Validar cierre documental" :
+                         "Confirmar fecha real de arranque"}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-3 bg-industrial-50 border border-industrial-200 rounded-lg flex gap-3">
+                    <FileText className="w-4 h-4 text-industrial-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <span className="block text-[10px] font-bold text-industrial-500 uppercase">Documento Requerido</span>
+                      <span className="text-xs text-industrial-800 mt-0.5 block">
+                        {selectedActivity.status === "En Riesgo" ? "Evidencia de avance requerida" :
+                         selectedActivity.status === "En Proceso" ? "Minuta o evidencia de ejecución" :
+                         selectedActivity.status === "Terminada" ? "Acta o evidencia final" :
+                         "Plan de trabajo pendiente"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* IA Copilot */}
+              <div className="p-4 bg-brand-50 border border-brand-200 rounded-xl space-y-2 mt-6">
+                <span className="font-bold text-brand-800 flex items-center gap-1.5 text-xs">
+                  <Sparkles className="w-3.5 h-3.5" /> IA Copilot Analysis
+                </span>
+                <p className="text-xs text-industrial-700 leading-relaxed">
+                  {selectedActivity.status === "En Riesgo" 
+                    ? "La IA recomienda revisar dependencias, responsable y fecha compromiso. Esta actividad podría afectar la ruta crítica del proyecto."
+                    : selectedActivity.progress >= 80 && selectedActivity.status !== "Terminada"
+                    ? "La IA identifica esta actividad como cercana a cierre. Se recomienda solicitar evidencia final y validar entregables."
+                    : selectedActivity.progress === 0 && selectedActivity.status === "Pendiente"
+                    ? "La IA detecta una actividad no iniciada. Se recomienda confirmar bloqueadores antes de la siguiente reunión de seguimiento."
+                    : "La IA no detecta desviaciones críticas. Se recomienda mantener seguimiento semanal."}
+                </p>
+              </div>
+
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

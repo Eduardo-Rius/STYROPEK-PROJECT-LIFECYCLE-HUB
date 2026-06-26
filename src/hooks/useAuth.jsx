@@ -3,6 +3,8 @@ import { subscribeToAuth, login as authLogin, logout as authLogout } from "../se
 import { hasPermission as checkPermission } from "../utils/permissions";
 import { getCurrentUserDoc } from "../services/authService";
 import { auth } from "../services/firebase";
+import { SEED_USERS } from "../data/seedData";
+
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
@@ -17,43 +19,51 @@ export function AuthProvider({ children }) {
       setProfile(authProfile);
       setLoading(false);
     });
-
     return () => unsubscribe();
   }, []);
 
   const login = async (email, password) => {
-    console.log('AUTH LOGIN START');
     setLoading(true);
     setError(null);
     try {
       await authLogin(email, password);
-      // After login, obtain current user
       const currentUser = auth.currentUser;
       let profileData = null;
       if (currentUser) {
         try {
           profileData = await getCurrentUserDoc(currentUser.uid);
-        } catch (profileErr) {
-          console.error('Error fetching profile after login:', profileErr);
+        } catch (_) {
+          // ignore Firestore fetch errors
         }
       }
       if (!profileData) {
-        const role = email === 'admin@styropek.com' ? 'admin' : 'user';
-        profileData = { uid: currentUser?.uid, email, role };
-        console.log('PROFILE FALLBACK USED');
-      } else {
-        console.log('PROFILE LOADED');
+        const seed = SEED_USERS.find(u => u.email === email);
+        if (seed) {
+          profileData = {
+            uid: currentUser?.uid,
+            email: seed.email,
+            fullName: seed.fullName,
+            role: seed.role,
+            department: seed.department || "Operaciones",
+            areaId: seed.areaId || "",
+            plantId: seed.plantId || "",
+            status: "active"
+          };
+        } else {
+          profileData = {
+            uid: currentUser?.uid,
+            email,
+            role: email === "admin@styropek.com" ? "admin" : "user"
+          };
+        }
       }
       setUser(currentUser);
       setProfile(profileData);
-      console.log('AUTH STATE CHANGED');
     } catch (err) {
       setError(err.message || "Error al iniciar sesión");
-      console.error('Login error:', err);
       throw err;
     } finally {
       setLoading(false);
-      console.log('AUTH LOADING FALSE');
     }
   };
 
@@ -61,8 +71,8 @@ export function AuthProvider({ children }) {
     setLoading(true);
     try {
       await authLogout();
-      setProfile(null);
       setUser(null);
+      setProfile(null);
     } catch (err) {
       setError(err.message || "Error al cerrar sesión");
     } finally {
@@ -70,12 +80,7 @@ export function AuthProvider({ children }) {
     }
   };
 
-  /**
-   * Checks if the currently logged in user has a specific permission.
-   * @param {string} permission 
-   * @returns {boolean}
-   */
-  const hasPermission = (permission) => {
+  const hasPermission = permission => {
     if (!profile || !profile.role) return false;
     return checkPermission(profile.role, permission);
   };
@@ -98,8 +103,9 @@ export function AuthProvider({ children }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("useAuth debe usarse dentro de un AuthProvider");
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }
+
 export default useAuth;
